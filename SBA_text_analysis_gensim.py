@@ -68,6 +68,8 @@ SBAcorpus=corpora.MmCorpus("SBA.mm")
 
 # TF-IDF
 SBAtfidf=models.TfidfModel(SBAcorpus)
+print SBAtfidf.id2word
+SBAtfidf
 SBAcorpus_tfidf=SBAtfidf[SBAcorpus]
 #print FEMAcorpus_tfidf
 #
