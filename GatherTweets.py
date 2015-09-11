@@ -42,6 +42,7 @@ class TweetStreamListener(StreamListener):
             doc_type='temp',
             body={
                 'query':{
+                    'bool':{
                         'should':[
                             {
                             'terms':{
@@ -49,6 +50,7 @@ class TweetStreamListener(StreamListener):
                             }
                             ],
                         'minimum_should_match':1
+                        }
                     }
                 }
             )
