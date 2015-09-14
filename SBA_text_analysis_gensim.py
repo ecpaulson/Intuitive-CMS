@@ -1,6 +1,6 @@
 __author__ = 'elisabethpaulson'
 
-########## THIS FILE PERFORMS TEXT ANALYSIS ON THE FEMA CONTENT AND CREATES A CORPUS AND DICTIONARY FROM THE CONTENT
+########## THIS FILE PERFORMS TEXT ANALYSIS ON THE SBA CONTENT AND CREATES A CORPUS AND DICTIONARY FROM THE CONTENT
 
 from standardize_web_content import *
 from nltk.corpus import stopwords
@@ -14,18 +14,16 @@ texts=[[word for word in sentences if word.lower() not in stopwords.words("engli
 
 chunktexts=[nltk.pos_tag(sentences) for sentences in texts]
 patterns="""
-            VP:{<V.*><DT>?<JJ>?<CD>?<NN.*>}
-            VP2:{<VBZ>*<RB>+}
-            NP:{<CD>?<DT>?<JJ>*<NN.*>}
-            V: {<VBP>*}
-            N:{<NN.*>}
-            CD: {<CD>}
-"""
+                VP:{<V.*><DT>?<JJ.*>?<NN.*>}
+                NP:{<DT>?<JJ>*<NN.*>}
+                N:{<NN.*>}
+    """
 NPchunker=nltk.RegexpParser(patterns)
 
 from nltk.stem.snowball import SnowballStemmer
 st=SnowballStemmer('english')
 
+print "Starting chunking"
 chunkedtext=[]
 for text in chunktexts:
     temp=[]
@@ -43,33 +41,21 @@ for text in chunktexts:
             temp.append(string)
         except: pass
     chunkedtext.append(temp)
-
-# # KEEP ONLY NOUNS
-# texts=[nltk.pos_tag(sentences) for sentences in texts]
-# texts=[[word for word in sentences if word[1]=='NNP']for sentences in texts]
-# texts=[[word[0] for word in sentences] for sentences in texts]
-
-# # REDUCE NOUNS TO STEMS
-# from nltk.stem.snowball import SnowballStemmer
-# st=SnowballStemmer('english')
-# texts=[[st.stem(word) for word in sentences] for sentences in texts]
+print "Done Chunking!"
 
 # SAVE DICTIONARY
-dictionary=corpora.Dictionary(texts)
+dictionary=corpora.Dictionary(chunkedtext)
 dictionary.save("SBA.dict")
-#print(dictionary)
+print("Made Dictionary!")
 
 # SAVE CORPUS OF DESCRIPTIONS
-SBAcorpus=[dictionary.doc2bow(text) for text in texts]
-#print FEMAcorpus[:5]
+SBAcorpus=[dictionary.doc2bow(text) for text in chunkedtext]
 
 corpora.MmCorpus.serialize('SBA.mm',SBAcorpus)
 SBAcorpus=corpora.MmCorpus("SBA.mm")
 
 # TF-IDF
 SBAtfidf=models.TfidfModel(SBAcorpus)
-print SBAtfidf.id2word
-SBAtfidf
 SBAcorpus_tfidf=SBAtfidf[SBAcorpus]
 #print FEMAcorpus_tfidf
 #
@@ -82,19 +68,13 @@ SBAcorpus_tfidf=SBAtfidf[SBAcorpus]
 # LDA Model
 SBAlda=models.LdaModel(SBAcorpus,id2word=dictionary,num_topics=50)
 SBAcorpus_lda=SBAlda[SBAcorpus]
+print "Finished LDA modeling!"
 #pprint(SBAlda.print_topics(5,5))
 
 # # HDP Model
 # FEMAhdp=models.HdpModel(FEMAcorpus_tfidf,id2word=dictionary)
 # FEMAcorpus_hdp=FEMAhdp[FEMAcorpus_tfidf]
 # #pprint(hdp.print_topics(10,topn=5))
-
-
-#for doc in corpus_lsi:
-#    doc=sorted(doc,key=lambda  item: -item[1])
-#    print(doc)
-
-
 
 ##### # FIND WHAT TOPIC BEST MATCHES GIVEN TERM
 # doc="loan application" #Make up query term
