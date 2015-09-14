@@ -2,8 +2,6 @@ __author__ = 'elisabethpaulson'
 
 from elasticsearch import Elasticsearch
 es=Elasticsearch()
-from sklearn.datasets import fetch_20newsgroups
-from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
 from sklearn.decomposition import PCA
@@ -11,40 +9,10 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 #from standardize_web_content import *
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.cluster import KMeans, MiniBatchKMeans
-
-############## FIRST PERFORM ANALYSIS ON FEMA WEB CONTENT #################
-
-# vectorizer2 = TfidfVectorizer(min_df=5, stop_words='english',max_features=30,ngram_range=(1,3))
-#
-# # ANALYSIS ON EACH PAGE SEPARATELY
-# V = vectorizer.fit_transform(standard_text)
-#
-# corpus=matutils.Sparse2Corpus(V,documents_columns=True)
-#
-# texts=[nltk.word_tokenize(text) for text in standard_text]
-# texts=[[word for word in sentences if word.lower() not in stopwords.words("english")] for sentences in texts]
-#
-# print standard_text[:10]
-# #print chunkedtext[:10]
-#
-# # ANALYSIS ON ALL FEMA CONTENT TOGETHER
-# words=[doc.split() for doc in standard_text]
-# words=''
-# for doc in standard_text:
-#     words+=doc
-# words=words.split()
-#
-# W = vectorizer2.fit_transform(words)
-# terms = vectorizer2.get_feature_names()
-
-
-##### NOW ANALYZE TWITTER DATA ######
-
 from TwitterSBA import *
 
-def pos_tokenizer(s):
+def pos_tokenizer(s): #define a tokenizer that uses POS tagging
     import nltk
 
     texts=nltk.word_tokenize(s)
@@ -52,16 +20,12 @@ def pos_tokenizer(s):
     texts=[word for word in texts if len(word)>2]
 
     # PULL OUT NOUN AND VERB PHRASES
-
     chunktext=nltk.pos_tag(texts)
     patterns="""
                 VP:{<V.*><DT>?<JJ.*>?<NN.*>}
                 NP:{<DT>?<JJ>*<NN.*>}
                 N:{<NN.*>}
     """
-    #VP2:{<VBZ>+<RB>+}
-    #            V: {<VBP>*}
-
     NPchunker=nltk.RegexpParser(patterns)
 
     from nltk.stem.snowball import SnowballStemmer
@@ -72,8 +36,6 @@ def pos_tokenizer(s):
     result=NPchunker.parse(chunktext)
     #print result
     for phrase in result:
-        #print phrase
-        #if 'small/JJ' not in phrase:
         try:
             phrase.label()
             string=''
@@ -87,9 +49,10 @@ def pos_tokenizer(s):
         except: pass
     return temp
 
+# DEFINE VECTORIZER
 vectorizer = TfidfVectorizer(max_df=0.5,min_df=2, stop_words='english',ngram_range=(1,3),tokenizer=pos_tokenizer)
 
-
+# FIT AND TRANSFORM ALL TWEETS
 X = vectorizer.fit_transform(tweets)
 #print X
 
@@ -99,12 +62,13 @@ X = vectorizer.fit_transform(tweets)
 # explained_variance = svd.explained_variance_ratio_.sum()
 # print explained_variance
 
-#km=MiniBatchKMeans(n_clusters=10)
-n_clusters=10
+n_clusters=20 #specify number of clusters
+#km=MiniBatchKMeans(n_clusters=n_clusters) #could try MiniBatchKMeans instead of KMeans
 km=KMeans(n_clusters=n_clusters)
 
 km.fit(X)
 
+# PRINT TOP TERMS PER CLUSTER
 topic_phrases=[]
 print("Top terms per cluster:")
 order_centroids = km.cluster_centers_.argsort()[:, ::-1]
@@ -114,8 +78,10 @@ for i in range(n_clusters):
     topic_phrases.append(", ".join([terms[ind] for ind in order_centroids[i, :n_clusters]]))
     print(", ".join([terms[ind] for ind in order_centroids[i, :n_clusters]]))
 
+# PREDICT WHICH TOPIC EACH TWEET BELONGS TO
 vec=km.predict(X)
 
+# PUT TOPIC INFO INTO NEW ES INDEX
 for i in range(len(vec)):
     k= str(vec[i])
     es.index(index="topics",
@@ -128,6 +94,7 @@ for i in range(len(vec)):
                            "processed tweet": tweets[i]
                            })
 
+# PRINT ALL TWEETS FOR EACH TOPIC
 for i in range(n_clusters):
     print 'TOPIC',i
     for j in range(len(tweets)):
@@ -169,7 +136,7 @@ plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
 plt.xticks(())
 plt.yticks(())
-plt.show()
+#plt.show()
 
 
 ####### MeanShift algorithm ############################
