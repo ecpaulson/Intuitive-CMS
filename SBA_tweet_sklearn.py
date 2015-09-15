@@ -1,20 +1,18 @@
 __author__ = 'elisabethpaulson'
 
-from elasticsearch import Elasticsearch
-es=Elasticsearch()
+####### THIS FILE CLUSTERS TWEETS USING KMEANS FROM THE SKLEARN MODULE #############
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import NMF
 from sklearn.decomposition import PCA
-from sklearn.cluster import MeanShift, estimate_bandwidth
-#from standardize_web_content import *
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from TwitterSBA import *
+from nltk.corpus import stopwords
+import nltk
+from nltk.stem.snowball import SnowballStemmer
+st=SnowballStemmer('english')
 
 def pos_tokenizer(s): #define a tokenizer that uses POS tagging
-    import nltk
-
     texts=nltk.word_tokenize(s)
 
     texts=[word for word in texts if len(word)>2]
@@ -49,8 +47,19 @@ def pos_tokenizer(s): #define a tokenizer that uses POS tagging
         except: pass
     return temp
 
+def bigram_tokenizer(s):
+    texts=nltk.word_tokenize(s)
+    texts=[word for word in texts if word.lower() not in stopwords.words("english")]
+    doc_bigram=[]
+    for i in range(len(texts)-1):
+        # CAN CHOOSE TO STEM OR NOT STEM
+        #doc_bigram.append(texts[i]+' '+texts[i+1])
+        doc_bigram.append(st.stem(texts[i])+' '+st.stem(texts[i+1]))
+    return doc_bigram
+
+
 # DEFINE VECTORIZER
-vectorizer = TfidfVectorizer(max_df=0.5,min_df=2, stop_words='english',ngram_range=(1,3),tokenizer=pos_tokenizer)
+vectorizer = TfidfVectorizer(max_df=0.5,min_df=2, stop_words='english',tokenizer=bigram_tokenizer)#,ngram_range=(1,2))
 
 # FIT AND TRANSFORM ALL TWEETS
 X = vectorizer.fit_transform(tweets)
@@ -62,7 +71,7 @@ X = vectorizer.fit_transform(tweets)
 # explained_variance = svd.explained_variance_ratio_.sum()
 # print explained_variance
 
-n_clusters=20 #specify number of clusters
+n_clusters=10 #specify number of clusters
 #km=MiniBatchKMeans(n_clusters=n_clusters) #could try MiniBatchKMeans instead of KMeans
 km=KMeans(n_clusters=n_clusters)
 

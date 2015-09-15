@@ -1,14 +1,15 @@
 __author__ = 'elisabethpaulson'
 
 
-# THIS FILE SCRAPES CONTENT FROM FEMA'S WEBSITE USING SCRAPY. RUN IN TERMINAL AS "scrapy runspider FEMAscrapySpider.py -o FEMA-web-content.json"
+# THIS FILE SCRAPES CONTENT FROM FEMA'S WEBSITE USING SCRAPY. RUN IN TERMINAL AS "scrapy runspider SBAscrapySpider.py -o SBA-web-content.json"
 
 import scrapy
 
 class FEMASpider(scrapy.Spider):
     name = 'SBA'
     allowed_domains=["sba.gov"]
-    start_urls = ['https://www.sba.gov/content/what-sba-offers-help-small-businesses-grow',
+    start_urls = ['https://www.sba.gov',
+                  'https://www.sba.gov/content/what-sba-offers-help-small-businesses-grow',
                   'https://www.sba.gov/loanprograms',
                   'https://www.sba.gov/category/navigation-structure/loans-grants/small-business-loans/how-prepare-your-loan-application',
                   'https://www.sba.gov/content/connect-sba-lenders',

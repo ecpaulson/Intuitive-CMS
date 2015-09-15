@@ -75,15 +75,19 @@ for i in range(n_clusters):
                 article_bigram.append(st.stem(article_text[k])+' '+st.stem(article_text[k+1]))
             vec_bow=dictionary.doc2bow(article_bigram)
             print "We tried to find SBA content that relates to the tweeted link, and found",100*len(vec_bow)/(1.0*len(article_bigram)),'percent matching of bigrams.'
-            print len(vec_bow)/(1.0*len(article_bigram))
-            index=similarities.MatrixSimilarity.load('SBA.index')
-            sims=index[SBAlda[vec_bow]]
-            sims=sorted(enumerate(sims),key=lambda item: -item[1])
-            #print SBAlda[vec_bow]
-            print sims[:3]
-            for l in sims[:3]:
-                print(standard_descriptions[l[0]])
-                print(standard_links[l[0]])
+            if len(vec_bow)/(1.0*len(article_bigram))>0:
+                index=similarities.MatrixSimilarity.load('SBA.index')
+                sims=index[SBAlda[vec_bow]]
+                sims=sorted(enumerate(sims),key=lambda item: -item[1])
+                #print SBAlda[vec_bow]
+                print sims[:3]
+                score=sims[0][1]
+                print score
+                m=0
+                while sims[m][1]==score:
+                    print(standard_descriptions[sims[m][0]])
+                    print(standard_links[sims[m][0]])
+                    m+=1
                 print "There have been",len([x for x in vec if x==vec[i]]),'tweets like these in the last 5 hours!'
     else: #if no content is similar enough, show tweets relating to topic
         print "Not enough words in this topic relate to SBA content. Here's what people are talking about:"
@@ -119,13 +123,18 @@ for i in range(n_clusters):
             article_bigram.append(st.stem(article_text[k])+' '+st.stem(article_text[k+1]))
         vec_bow=dictionary.doc2bow(article_bigram)
         print "We tried to find SBA content that relates to the tweeted link, and found",100*len(vec_bow)/(1.0*len(article_bigram)),'percent matching of bigrams.'
-        print len(vec_bow)/(1.0*len(article_bigram))
-        index=similarities.MatrixSimilarity.load('SBA.index')
-        sims=index[SBAlda[vec_bow]]
-        sims=sorted(enumerate(sims),key=lambda item: -item[1])
-        #print SBAlda[vec_bow]
-        print sims[:3]
-        for l in sims[:3]:
-           print(standard_descriptions[l[0]])
-           print(standard_links[l[0]])
+        if len(vec_bow)/(1.0*len(article_bigram))>0:
+            index=similarities.MatrixSimilarity.load('SBA.index')
+            sims=index[SBAlda[vec_bow]]
+            sims=sorted(enumerate(sims),key=lambda item: -item[1])
+            #print SBAlda[vec_bow]
+            print sims[:3]
+            score=sims[0][1]
+            print score
+            m=0
+            while sims[m][1]==score:
+                print(standard_descriptions[sims[m][0]])
+                print(standard_links[sims[m][0]])
+                m+=1
+            print "There have been",len([x for x in vec if x==vec[i]]),'tweets like these in the last 5 hours!'
 
