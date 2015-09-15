@@ -2,6 +2,7 @@ __author__ = 'elisabethpaulson'
 
 from SBA_tweet_sklearn import *
 from SBA_text_analysis_gensim import *
+from ParseTwitterLinks import *
 
 ####### RELATE TWITTER DATA TO SBA WEB CONTENT #################
 
@@ -28,11 +29,9 @@ for i in range(n_clusters):
     #vec_bow=dictionary.doc2bow(doc.lower().split()) #use this when second option above is chosen
     percentage=len(vec_bow)/(len(doc)*1.0) #percentage of phrases in doc that are also found in the dictionary
 
-    if percentage>.5: #we want at least 50% of phrases in doc to actually appear in the dictionary. If not, we found a gap in content
+    if percentage>.4: #we want at least X% of phrases in doc to actually appear in the dictionary. If not, we found a gap in content
         vec_lda=SBAlda[vec_bow] #transform bow into LDA space
-
-        index=similarities.MatrixSimilarity(SBAlda[SBAcorpus])
-        index.save('SBA.index')
+        index=similarities.MatrixSimilarity.load('SBA.index')
         #index=similarities.MatrixSimilarity.load('SBA.index') #can use this instead if not 1st run
 
         # PRINT TOP 5 SBA DOCUMENTS THAT BEST MATCH QUERY TERM IF THEY EXIST
@@ -51,13 +50,82 @@ for i in range(n_clusters):
                     if m<3:
                         print full_tweets[j]
                         m+=1
+                    results = es.search(index="stream",
+                        doc_type="SBA",
+                        size=1,
+                        body={"query":
+                              {"match":{"full message":{"query": full_tweets[j],"operator":'and'}}}
+                              }#,
+                              # {'query':{'filtered':{'filter':{'range':{'date':{'from':datetime.datetime.now()-td,
+                              #   'to': datetime.datetime.now()}}}}}
+                              #   }
+                                )
+            for item in results['hits']['hits']:
+                if item['_source']['link']!='no link':
+                    #print item
+                    try:
+                        article_text=article_text+item['_source']['article_text']+item['_source']['article_title']
+                        #print article
+                    except:
+                        pass
             print "There have been",len([x for x in vec if x==vec[i]]),'tweets like these in the last 5 hours!'
+            article_text=article_text.lower().split()
+            article_bigram=[]
+            for k in range(len(article_text)-1):
+                article_bigram.append(st.stem(article_text[k])+' '+st.stem(article_text[k+1]))
+            vec_bow=dictionary.doc2bow(article_bigram)
+            print "We tried to find SBA content that relates to the tweeted link, and found",100*len(vec_bow)/(1.0*len(article_bigram)),'percent matching of bigrams.'
+            print len(vec_bow)/(1.0*len(article_bigram))
+            index=similarities.MatrixSimilarity.load('SBA.index')
+            sims=index[SBAlda[vec_bow]]
+            sims=sorted(enumerate(sims),key=lambda item: -item[1])
+            #print SBAlda[vec_bow]
+            print sims[:3]
+            for l in sims[:3]:
+                print(standard_descriptions[l[0]])
+                print(standard_links[l[0]])
+                print "There have been",len([x for x in vec if x==vec[i]]),'tweets like these in the last 5 hours!'
     else: #if no content is similar enough, show tweets relating to topic
         print "Not enough words in this topic relate to SBA content. Here's what people are talking about:"
         m=0
+        article_text=''
         for j in range(len(tweets)):
             if vec[j]==i:
                 if m<3:
                     print full_tweets[j]
                     m=m+1
+                results = es.search(index="stream",
+                        doc_type="SBA",
+                        size=1,
+                        body={"query":
+                              {"match":{"full message":{"query": full_tweets[j],"operator":'and'}}}
+                              }#,
+                              # {'query':{'filtered':{'filter':{'range':{'date':{'from':datetime.datetime.now()-td,
+                              #   'to': datetime.datetime.now()}}}}}
+                              #   }
+                                )
+                for item in results['hits']['hits']:
+                    if item['_source']['link']!='no link':
+                        #print item
+                        try:
+                            article_text=article_text+item['_source']['article_text']+item['_source']['article_title']
+                            #print article
+                        except:
+                            pass
         print "There have been",len([x for x in vec if x==vec[i]]),'tweets like these in the last 5 hours!'
+        article_text=article_text.lower().split()
+        article_bigram=[]
+        for k in range(len(article_text)-1):
+            article_bigram.append(st.stem(article_text[k])+' '+st.stem(article_text[k+1]))
+        vec_bow=dictionary.doc2bow(article_bigram)
+        print "We tried to find SBA content that relates to the tweeted link, and found",100*len(vec_bow)/(1.0*len(article_bigram)),'percent matching of bigrams.'
+        print len(vec_bow)/(1.0*len(article_bigram))
+        index=similarities.MatrixSimilarity.load('SBA.index')
+        sims=index[SBAlda[vec_bow]]
+        sims=sorted(enumerate(sims),key=lambda item: -item[1])
+        #print SBAlda[vec_bow]
+        print sims[:3]
+        for l in sims[:3]:
+           print(standard_descriptions[l[0]])
+           print(standard_links[l[0]])
+
