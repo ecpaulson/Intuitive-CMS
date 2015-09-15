@@ -15,11 +15,11 @@ import csv
 
 # MUST HAVE RUN GatherTweets.py BEFORE THIS TO CREATE THE ELASTICSEARCH DATABASE
 
-td=datetime.timedelta(minutes=60)
+td=datetime.timedelta(hours=1)
 
 result=es.search(
     index='stream',
-    doc_type='SBL',
+    doc_type='SBA',
     size=5000,
     body={
         'query':{
@@ -36,6 +36,7 @@ result=es.search(
             }
     }
     )
+
 print result['hits']['total']
 
 tweets=[]
@@ -44,6 +45,7 @@ for tweet in result['hits']['hits']:
     tweets.append(tweet['_source']['message'])
     full_tweets.append(tweet['_source']['full message'])
 
+### THIS SECTION PERFORMS TOPIC CLUSTERING USING GENSIM. CAN BE IGNORED IF USING SKLEARN INSTEAD #####
 # texts=[nltk.word_tokenize(tweet) for tweet in tweets]
 #
 # texts=[[word for word in text if len(word)>2] for text in texts]
