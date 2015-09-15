@@ -5,6 +5,7 @@ from readability.readability import Document
 from elasticsearch import Elasticsearch
 import pickle
 import time
+import re
 
 es = Elasticsearch()
 
@@ -18,7 +19,8 @@ es = Elasticsearch()
 # d = feedparser.parse('https://www.google.com/alerts/feeds/03803877705654670462/4544370163122525742')
 
 # List of Small Business Feeds
-sba_feeds = ["http://smallbusiness.foxbusiness.com/home/feed/rss/",
+sba_feeds = ['https://news.google.com/news?q=%22small%20businesses%22%20OR%20%22small%20business%22%20AND%20loan%20OR%20grant%20OR%20loans%20OR%20grant%20OR%20tax%20OR%20taxes&output=rss',
+            "http://smallbusiness.foxbusiness.com/home/feed/rss/",
              "http://www.allbusiness.com/feed/",
              "http://feeds.feedburner.com/entrepreneur/latest",
              "http://smallbusiness.foxbusiness.com/home/feed/rss/",
@@ -33,10 +35,10 @@ sba_feeds = ["http://smallbusiness.foxbusiness.com/home/feed/rss/",
 # entries as previously processed); for testing purposes only.
 
 # COMMENT OUT AFTER INITIAL RUN
-#last_update_time = dict()
+last_update_time = dict()
 
 # UNCOMMENT AFTER INITIAL RUN
-last_update_time = pickle.load(open("last_update_time.txt", "rb"))
+#last_update_time = pickle.load(open("last_update_time.txt", "rb"))
 
 for feed in sba_feeds:
 
@@ -45,10 +47,9 @@ for feed in sba_feeds:
     current_update_time = time.gmtime()
 
     # COMMENT OUT AFTER INITIAL RUN
-    # last_update_time.update([(feed, 0)])
+    last_update_time.update([(feed, 0)])
 
     for entry in d.entries:
-        print entry.published_parsed >= last_update_time[feed]
         if entry.published_parsed >= last_update_time[feed]:
 
             # SELECT ONE (based on feed type):
@@ -81,31 +82,39 @@ for feed in sba_feeds:
                 doc_type='temp2',
                 body={
                     'query':{
-                        'bool':{
-                            'should':[
-                                {
-                                'terms':{
-                                    'text':['small business','small businesses','loans','grant','grants','loan','pay','budget','debt','money', 'save','spend','invest','tax','taxes','dollar','apply','application','paid','credit','interest','bank','debtor','repay','borrow','lend','lender','federal']}
-                                }
-                                ],
-                            'minimum_should_match':2
+                        'query_string':{
+                            'fields':['title'],
+                            'query': 'small busines* AND (tax* OR loan* OR grant* OR pay* OR sav* OR invest* OR budget* OR appl* OR lend* OR debt*)'
+                        }
                         }
                     }
-                }
-            )
-
+                )
+            print result
             if result==True:
                 print 'MATCH!'
-                doc = {"doc": {"article_title": article_title,
-                               "article_url": article_url,
-                               "article_text": article_text,
-                               "published": entry.published}}
+                print entry.published
+                date=re.sub(r'[a-zA-Z]*\, |GMT','',entry.published)
+                dd=re.findall(r'[0-9][0-9] ',date)
+                print dd
+                month=re.findall(r'[a-zA-Z]+',date)
+                if month[0]=='Sep':MM='09'
+                elif month[0]=='Aug': MM='08'
+                elif month[0]=='July': MM='07'
+                time=re.findall(r'[0-9]+\:[0-9]+:[0-9]+',date)
+                date='2015/'+MM+'/'+dd[0]+time[0]
+                print date
+                doc = {"article_title": article_title,
+                           "article_url": article_url,
+                           "article_text": article_text,
+                           "published": date
+                       }
 
                 # Insert document into ES (change as necessary)
+
                 es.index(index="news-test",
                          doc_type="rss",
                          body=doc)
-                last_update_time.update([(feed, current_update_time)])
+    last_update_time.update([(feed, current_update_time)])
     print "Feed Complete!"
 
 pickle.dump(last_update_time, open("last_update_time.txt", "wb"))
