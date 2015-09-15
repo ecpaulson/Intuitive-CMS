@@ -48,12 +48,16 @@ class TweetStreamListener(StreamListener):
 
         if result==True: #If the incoming tweet matches the query
             print "MATCH!"
-            text=re.sub(r'rt |RT |&amp|http.*|@[a-zA-Z0-9]*|\|[^a-zA-Z ]','',text)
+            text=re.sub(r'rt |RT ','',text)
+            text=re.sub(r'&amp','',text)
+            text=re.sub(r'http.*','',text)
+            text=re.sub(r'@[a-zA-Z0-9]*','',text)
+            text=re.sub(r'\'','',text)
+            text=re.sub(r'[^a-zA-Z ]',' ',text)
             #text=nltk.word_tokenize(text)
             #text=[word for word in text if word.lower() not in stopwords.words("english")]
             #text=[st.stem(word) for word in text]
-            print text
-            text=' '.join(text)
+            #text=' '.join(text)
             tweet = TextBlob(dict_data["text"])
 
             # determine if sentiment is positive, negative, or neutral
