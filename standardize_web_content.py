@@ -37,12 +37,7 @@ standard_text=[]
 m=0
 for x in text:
     y = x.replace('/',' ').replace('-',' ').replace('&','').replace('.','').replace(',','').replace('(','').replace(')','').lower()  #split / and - into separated words
-    #y=''.join([i for i in y if not i.isdigit()])
-    #y=y.replace('[','').replace(']','').replace('U\'','').replace('\'',' ')
-    #y=re.sub(r'[\w]*[\\\.\-\&\/\(\)\"\:]+[\w]*', r'', y)
-    #y=re.sub(r'\(|\)','',y)
     y=re.sub(r':',' ',y)
-    #y=re.sub(r' [0-9]*.?[0-9]+ ','',y)
     y=re.sub(r'businesses|business|small|sba','',y)
     if y!='':
         standard_text.append(y)
