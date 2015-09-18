@@ -1,16 +1,53 @@
 __author__ = 'elisabethpaulson'
 
 ####### THIS FILE CLUSTERS TWEETS USING KMEANS FROM THE SKLEARN MODULE #############
+from elasticsearch import Elasticsearch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from TwitterSBA import *
+#from TwitterSBA import *
+#from ParseTwitterLinks import *
 from nltk.corpus import stopwords
 import nltk
 from nltk.stem.snowball import SnowballStemmer
+import datetime
+
 st=SnowballStemmer('english')
+es=Elasticsearch()
+
+# MUST HAVE RUN GatherTweets.py BEFORE THIS TO CREATE THE ELASTICSEARCH DATABASE
+
+td=datetime.timedelta(hours=1)
+
+result=es.search(
+    index='stream',
+    doc_type='SBA',
+    size=5000,
+    body={
+        'query':{
+            'filtered':{
+                'filter':{
+                    'range':{
+                        'date':{
+                            'from':datetime.datetime.now()-td,
+                            'to': datetime.datetime.now()
+                            }
+                        }
+                    }
+                }
+            }
+    }
+    )
+
+print result['hits']['total']
+
+tweets=[]
+full_tweets=[]
+for tweet in result['hits']['hits']:
+    tweets.append(tweet['_source']['message'])
+    full_tweets.append(tweet['_source']['full message'])
 
 def pos_tokenizer(s): #define a tokenizer that uses POS tagging
     texts=nltk.word_tokenize(s)
@@ -93,15 +130,23 @@ vec=km.predict(X)
 # PUT TOPIC INFO INTO NEW ES INDEX
 for i in range(len(vec)):
     k= str(vec[i])
-    es.index(index="topics",
-                     doc_type="tweets",
-                     id=i,
-                     body={"topic_num": k,
-                           "num_tweets": len([x for x in vec if x==vec[i]]),
-                           "phrases": topic_phrases[vec[i]],
-                           "full tweet":full_tweets[i],
-                           "processed tweet": tweets[i]
-                           })
+    result = es.search(index="stream",
+                        doc_type="SBA",
+                        size=100,
+                        body={"query":
+                              {"match":{"full message":{"query": full_tweets[i],"operator":'and'}}}
+                              }
+                                )
+    for item in result['hits']['hits']:
+        doc ={"doc": {"topic": k,
+               "#tweets_in_topic": len([x for x in vec if x==vec[i]]),
+               "phrases": topic_phrases[vec[i]]
+               }}
+
+        es.update(index=item["_index"],
+                      doc_type=item["_type"],
+                      id=item["_id"],
+                      body=doc)
 
 # PRINT ALL TWEETS FOR EACH TOPIC
 for i in range(n_clusters):

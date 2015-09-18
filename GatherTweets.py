@@ -81,7 +81,11 @@ class TweetStreamListener(StreamListener):
                            "subjectivity": tweet.sentiment.subjectivity,
                            "sentiment": sentiment,
                            "link": link,
-                           "link_processed":'no'
+                           "link_processed":'no',
+                           "article_title": '',
+                           "article_url": '',
+                           "article_text": '',
+                                 'flag':''
                             })
             else:
                 es.index(index="stream",
@@ -95,7 +99,11 @@ class TweetStreamListener(StreamListener):
                            "subjectivity": tweet.sentiment.subjectivity,
                            "sentiment": sentiment,
                            "link": "no link",
-                           "link_processed":'yes'
+                           "link_processed":'yes',
+                           "article_title": '',
+                           "article_url": '',
+                           "article_text": '',
+                                 'flag':''
                             })
 
 
