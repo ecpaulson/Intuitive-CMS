@@ -42,7 +42,7 @@ class TweetStreamListener(StreamListener):
             doc_type='temp',
             body={
                 'query':{'bool':{'should':[{'terms':{
-                    'message':['loans','grant','grants','loan','pay','budget','debt','money', 'save','spend','invest','tax','taxes','dollar','apply','application','paid','credit','interest','bank','debtor','repay','borrow','lend','lender','federal']}
+                    'message':['loans','grant','grants','loan','pay','budget','debt','money', 'save','spend','invest','tax','taxes','dollar','apply','application','paid','credit','interest','bank','debtor','repay','borrow','lend','lender','federal','fund','funding']}
                     }],'minimum_should_match':1}}
                 })
 
@@ -50,10 +50,11 @@ class TweetStreamListener(StreamListener):
             print "MATCH!"
             text=re.sub(r'rt |RT ','',text)
             text=re.sub(r'&amp','',text)
-            text=re.sub(r'http.*','',text)
+            text=re.sub(r'http[^ ]*','',text)
+            text=re.sub(r'#','',text)
             text=re.sub(r'@[a-zA-Z0-9]*','',text)
             text=re.sub(r'\'','',text)
-            text=re.sub(r'[^a-zA-Z ]',' ',text)
+            text=re.sub(r'[^a-zA-Z0-9 ]',' ',text)
             #text=nltk.word_tokenize(text)
             #text=[word for word in text if word.lower() not in stopwords.words("english")]
             #text=[st.stem(word) for word in text]
@@ -68,6 +69,7 @@ class TweetStreamListener(StreamListener):
             else:
                 sentiment = "positive"
             print datetime.datetime.now()
+            print text
             if 'http' in dict_data["text"]: #if the tweet contains a link
                 print 'contains link'
                 es.index(index="stream",
@@ -123,7 +125,7 @@ if __name__ == '__main__':
     auth.set_access_token(access_token, access_token_secret)
 
     # create instance of the tweepy stream
-    stream = Stream(auth, listener)
+    stream = Stream(auth, listener,verify=False)
 
     # search twitter for "congress" keyword
     stream.filter(track=['small business','small businesses','SBA','SBAgov','smallbiz'])
